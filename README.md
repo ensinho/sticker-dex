@@ -1,5 +1,6 @@
 ## Sticker Dex 👾
 ### A web-based proof of concept for a Pokémon-themed WhatsApp sticker creator.
+![image](https://github.com/user-attachments/assets/d1355037-20b7-49cd-ae23-127870442715)
 
 #### Please Note
 This repository is a template and a proof of concept, designed to showcase a future app idea.
