@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticker Dex</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --poke-red: #EF5350;
+            --poke-blue: #29B6F6;
+            --poke-yellow: #FFCA28;
+            --poke-dark: #37474F;
+            --poke-light: #ECEFF1;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--poke-light);
+        }
+        .font-pixel {
+            font-family: 'Press Start 2P', cursive;
+        }
+        .poke-dialog {
+            border: 4px solid var(--poke-dark);
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .poke-button {
+            font-family: 'Press Start 2P', cursive;
+            border: 3px solid var(--poke-dark);
+            border-radius: 8px;
+            padding: 10px 15px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s ease-in-out;
+            background-color: white;
+            color: var(--poke-dark);
+        }
+        .poke-button:hover {
+            background-color: var(--poke-yellow);
+            transform: translateY(-2px);
+        }
+        .poke-button:disabled {
+            background-color: #BDBDBD;
+            color: #757575;
+            cursor: not-allowed;
+            border-color: #757575;
+        }
+        .poke-button-primary {
+            background-color: var(--poke-red);
+            color: white;
+        }
+        .poke-button-primary:hover {
+            background-color: #D32F2F;
+        }
+        .upload-area {
+            border: 4px dashed var(--poke-dark);
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+        .upload-area.drag-over {
+            background-color: var(--poke-blue);
+        }
+        .sticker-grid-item {
+            position: relative;
+            background: white;
+            border-radius: 8px;
+            padding: 8px;
+            border: 2px solid var(--poke-dark);
+        }
+        .sticker-image {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+        }
+        .hidden {
+            display: none;
+        }
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--poke-light);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--poke-dark);
+            border-radius: 6px;
+            border: 2px solid var(--poke-light);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Audio for UI sounds -->
+    <audio id="click-sound" src="https://www.myinstants.com/media/sounds/pokemon-a-button.mp3" preload="auto"></audio>
+
+    <header class="bg-red-600 p-4 shadow-lg flex items-center justify-center space-x-4">
+        <img src="https://img.icons8.com/plasticine/100/000000/pokeball.png" alt="Pokébola" class="w-12 h-12"/>
+        <h1 class="font-pixel text-2xl md:text-4xl text-white text-center tracking-wider" style="text-shadow: 2px 2px #37474F;">
+            Sticker Dex
+        </h1>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8 max-w-4xl">
+        
+        <!-- Create Pack -->
+        <section id="create-pack-section" class="poke-dialog p-6 mb-8">
+            <h2 class="font-pixel text-lg mb-4 text-center">1. Begin your new journey!</h2>
+            <div class="space-y-4">
+                <input type="text" id="pack-name" placeholder="Package name (ex: Johns stickers)" class="w-full p-3 border-2 border-gray-400 rounded-lg focus:border-red-500 focus:ring-red-500">
+                <input type="text" id="pack-author" placeholder="Author (ex: by Enzo)" class="w-full p-3 border-2 border-gray-400 rounded-lg focus:border-red-500 focus:ring-red-500">
+                <button id="create-pack-btn" class="poke-button poke-button-primary w-full">Create package</button>
+            </div>
+        </section>
+
+        <!--  Upload and Manage -->
+        <section id="sticker-manager-section" class="hidden">
+            <div class="poke-dialog p-6 mb-8 text-center">
+                <h2 class="font-pixel text-lg mb-2">Package: <span id="display-pack-name" class="text-red-600"></span></h2>
+                <p class="text-sm text-gray-600">Creator: <span id="display-pack-author"></span></p>
+            </div>
+
+            <!-- Upload Area -->
+            <div id="upload-container" class="poke-dialog p-6 mb-8">
+                <h2 class="font-pixel text-lg mb-4 text-center">2. Capture your image!</h2>
+                <div id="upload-area" class="upload-area p-10 text-center cursor-pointer">
+                    <p class="font-bold">Drag or drop your image or GIF here</p>
+                    <p class="text-sm text-gray-600 my-2">or</p>
+                    <button id="select-file-btn" class="poke-button">Choose files</button>
+                    <input type="file" id="file-input" class="hidden" accept="image/jpeg,image/png,image/webp,image/gif">
+                </div>
+            </div>
+
+            <!-- Sticker Dex Grid -->
+            <div class="poke-dialog p-6">
+                <h2 class="font-pixel text-lg mb-4 text-center">3. Your sticker dex</h2>
+                <div id="sticker-dex-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 min-h-[120px] bg-gray-200 p-4 rounded-lg">
+                    <!-- Stickers will be added here -->
+                    <p id="empty-dex-message" class="col-span-full text-center text-gray-500 self-center">Your dex its empty... Capture your first sticker!</p>
+                </div>
+                <div class="text-center mt-6">
+                    <button id="export-btn" class="poke-button poke-button-primary w-full md:w-auto" disabled>Add to Whatsapp</button>
+                    <p class="text-xs text-gray-500 mt-2">Minimum of 3 stickers.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal for Editing -->
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
+        <div class="poke-dialog w-full max-w-md p-6 text-center">
+            <h2 class="font-pixel text-lg mb-4">Professor Enzo's lab</h2>
+            <p class="mb-4">Your image is ready to evolve!</p>
+            <div class="mb-4 bg-gray-200 p-2 rounded-lg inline-block">
+                <img id="image-preview" src="" alt="Pré-visualização" class="max-w-full max-h-48 rounded">
+            </div>
+            <p class="mb-6">Choose a moove to create the sticker:</p>
+            <div class="space-y-4">
+                <button id="quick-attack-btn" class="poke-button w-full">Quick Attack (Full image)</button>
+                <button id="magic-cut-btn" class="poke-button w-full">Dazzling Gleam (Remove background)</button>
+            </div>
+             <button id="close-modal-btn" class="mt-6 text-sm text-gray-500 hover:text-red-500">Cancelar</button>
+        </div>
+    </div>
+    
+    <footer class="text-center p-4 mt-8">
+        <p class="text-sm text-gray-600">Built with ❤️ by <a href="#" class="font-bold text-red-600">Enzo Esmeraldo</a></p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const createPackSection = document.getElementById('create-pack-section');
+            const stickerManagerSection = document.getElementById('sticker-manager-section');
+            const createPackBtn = document.getElementById('create-pack-btn');
+            const packNameInput = document.getElementById('pack-name');
+            const packAuthorInput = document.getElementById('pack-author');
+            const displayPackName = document.getElementById('display-pack-name');
+            const displayPackAuthor = document.getElementById('display-pack-author');
+
+            const uploadContainer = document.getElementById('upload-container');
+            const uploadArea = document.getElementById('upload-area');
+            const selectFileBtn = document.getElementById('select-file-btn');
+            const fileInput = document.getElementById('file-input');
+            
+            const editModal = document.getElementById('edit-modal');
+            const imagePreview = document.getElementById('image-preview');
+            const quickAttackBtn = document.getElementById('quick-attack-btn');
+            const magicCutBtn = document.getElementById('magic-cut-btn');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+
+            const stickerDexGrid = document.getElementById('sticker-dex-grid');
+            const emptyDexMessage = document.getElementById('empty-dex-message');
+            const exportBtn = document.getElementById('export-btn');
+            
+            const clickSound = document.getElementById('click-sound');
+
+            // states
+            let stickerPack = {
+                name: '',
+                author: '',
+                stickers: [], 
+            };
+            let currentFile = null;
+
+            // sounds
+            const playClickSound = () => {
+                clickSound.currentTime = 0;
+                clickSound.play().catch(e => console.log("Audio playback failed."));
+            };
+
+            document.querySelectorAll('.poke-button').forEach(button => {
+                button.addEventListener('click', playClickSound);
+            });
+            closeModalBtn.addEventListener('click', playClickSound);
+
+            // Creating pack
+            createPackBtn.addEventListener('click', () => {
+                const packName = packNameInput.value.trim();
+                const packAuthor = packAuthorInput.value.trim();
+
+                if (!packName || !packAuthor) {
+                    alert('Por favor, preencha o nome do pacote e o autor.');
+                    return;
+                }
+
+                stickerPack.name = packName;
+                stickerPack.author = packAuthor;
+
+                displayPackName.textContent = packName;
+                displayPackAuthor.textContent = packAuthor;
+
+                createPackSection.classList.add('hidden');
+                stickerManagerSection.classList.remove('hidden');
+            });
+
+            // Uploading
+            selectFileBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    handleFile(file);
+                }
+            });
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => uploadArea.classList.add('drag-over'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('drag-over'), false);
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    handleFile(file);
+                }
+            }, false);
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function handleFile(file) {
+
+                const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Tipo de arquivo inválido! Por favor, use JPG, PNG, WebP ou GIF.');
+                    return;
+                }
+                currentFile = file;
+                showEditModal(file);
+            }
+
+            // Edit Modal
+            function showEditModal(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    editModal.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+
+            closeModalBtn.addEventListener('click', () => {
+                editModal.classList.add('hidden');
+                currentFile = null;
+            });
+
+            quickAttackBtn.addEventListener('click', () => {
+                if (currentFile) {
+                    processImage(currentFile);
+                }
+            });
+
+            magicCutBtn.addEventListener('click', () => {
+                // future RemoveBg API
+                alert('Função em desenvolvimento! O "Corte Mágico" usará IA para remover o fundo. Por enquanto, a imagem será adicionada como está.');
+                if (currentFile) {
+                    processImage(currentFile);
+                }
+            });
+
+            function processImage(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    addStickerToDex(e.target.result);
+                    editModal.classList.add('hidden');
+                    currentFile = null;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // managing
+            function addStickerToDex(imageDataUrl) {
+                stickerPack.stickers.push(imageDataUrl);
+                
+                if (emptyDexMessage) {
+                    emptyDexMessage.remove();
+                }
+
+                const stickerElement = document.createElement('div');
+                stickerElement.className = 'sticker-grid-item animate-pulse'; // Pulse effect on add
+                stickerElement.innerHTML = `<img src="${imageDataUrl}" alt="Figurinha" class="sticker-image">`;
+                stickerDexGrid.appendChild(stickerElement);
+
+                setTimeout(() => stickerElement.classList.remove('animate-pulse'), 500);
+
+                updateExportButton();
+            }
+
+            function updateExportButton() {
+                if (stickerPack.stickers.length >= 3) {
+                    exportBtn.disabled = false;
+                } else {
+                    exportBtn.disabled = true;
+                }
+            }
+
+            // future exportation
+            exportBtn.addEventListener('click', () => {
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                if (isMobile) {
+                    alert('Exportação Iniciada!\n\nEm uma aplicação real, isso abriria o WhatsApp para você adicionar o pacote de figurinhas.');
+                } else {
+                    alert('Abra no seu celular!\n\nPara adicionar ao WhatsApp, acesse este site no seu celular. Em uma aplicação real, mostraríamos um QR Code aqui para facilitar.');
+                }
+                console.log('Sticker Pack to be exported:', stickerPack);
+            });
+        });
+    </script>
+</body>
+</html>
